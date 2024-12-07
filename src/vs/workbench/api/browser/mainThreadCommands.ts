@@ -19,6 +19,9 @@ export class MainThreadCommands implements MainThreadCommandsShape {
 	private readonly _commandRegistrations = new DisposableMap<string>();
 	private readonly _generateCommandsDocumentationRegistration: IDisposable;
 	private readonly _proxy: ExtHostCommandsShape;
+	// 加回来onDidExecuteCommand的Listener
+	private _onDidExecuteCommandListener?: IDisposable;
+
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -90,6 +93,19 @@ export class MainThreadCommands implements MainThreadCommandsShape {
 			throw new Error('$executeCommand:retry');
 		}
 		return this._commandService.executeCommand<T>(id, ...args);
+	}
+
+	// 加回来onDidExecuteCommand的Listener的注册和注销
+	$registerCommandListener() {
+		if (!this._onDidExecuteCommandListener) {
+			this._onDidExecuteCommandListener = this._commandService.onDidExecuteCommand(command => this._proxy.$handleDidExecuteCommand(command));
+		}
+	}
+	$unregisterCommandListener() {
+		if (this._onDidExecuteCommandListener) {
+			this._onDidExecuteCommandListener.dispose();
+			this._onDidExecuteCommandListener = undefined;
+		}
 	}
 
 	$getCommands(): Promise<string[]> {

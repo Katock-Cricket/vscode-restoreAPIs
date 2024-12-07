@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import {CommandExecutionEvent} from "vscode";
+
 declare module 'vscode' {
 
 	/**
@@ -10567,7 +10569,15 @@ declare module 'vscode' {
 	 * }
 	 * ```
 	 */
+		// 加回来onDidExecuteCommand的Event类型
+	export interface CommandExecutionEvent {
+		command: string;
+		arguments: any[];
+	}
+
 	export namespace commands {
+		// 加回来onDidExecuteCommand
+		export const onDidExecuteCommand: Event<CommandExecutionEvent>;
 
 		/**
 		 * Registers a command that can be invoked via a keyboard shortcut,

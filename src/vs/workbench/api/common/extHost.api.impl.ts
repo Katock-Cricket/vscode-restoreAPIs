@@ -352,6 +352,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 			getCommands(filterInternal: boolean = false): Thenable<string[]> {
 				return extHostCommands.getCommands(filterInternal);
+			},
+			// 加回onDidExecuteCommand的实现
+			onDidExecuteCommand(listener, thisArgs?, disposables?) {
+				return extHostCommands.onDidExecuteCommand(listener, thisArgs, disposables);
 			}
 		};
 

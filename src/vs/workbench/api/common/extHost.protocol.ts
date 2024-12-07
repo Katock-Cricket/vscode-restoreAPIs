@@ -24,6 +24,8 @@ import * as editorCommon from '../../../editor/common/editorCommon.js';
 import { StandardTokenType } from '../../../editor/common/encodedTokenAttributes.js';
 import * as languages from '../../../editor/common/languages.js';
 import { CharacterPair, CommentRule, EnterAction } from '../../../editor/common/languages/languageConfiguration.js';
+//加回onDidExecuteCommand的依赖
+import { ICommandEvent } from 'vs/platform/commands/common/commands.js';
 import { EndOfLineSequence } from '../../../editor/common/model.js';
 import { IModelChangedEvent } from '../../../editor/common/model/mirrorTextModel.js';
 import { IAccessibilityInformation } from '../../../platform/accessibility/common/accessibility.js';
@@ -107,6 +109,10 @@ export interface MainThreadClipboardShape extends IDisposable {
 
 export interface MainThreadCommandsShape extends IDisposable {
 	$registerCommand(id: string): void;
+	// 加回onDidExecuteCommand的listener
+	$registerCommandListener(): void;
+	$unregisterCommandListener(): void;
+
 	$unregisterCommand(id: string): void;
 	$fireCommandActivationEvent(id: string): void;
 	$executeCommand(id: string, args: any[] | SerializableObjectWithBuffers<any[]>, retry: boolean): Promise<unknown | undefined>;
@@ -1775,6 +1781,8 @@ export interface ExtHostCodeMapperShape {
 export interface ExtHostCommandsShape {
 	$executeContributedCommand(id: string, ...args: any[]): Promise<unknown>;
 	$getContributedCommandMetadata(): Promise<{ [id: string]: string | ICommandMetadataDto }>;
+	//加回onDidExecuteCommand事件的handle
+	$handleDidExecuteCommand(command: ICommandEvent): void;
 }
 
 export interface ExtHostConfigurationShape {

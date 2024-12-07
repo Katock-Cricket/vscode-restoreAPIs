@@ -6,7 +6,10 @@
 /* eslint-disable local/code-no-native-private */
 
 import { validateConstraint } from '../../../base/common/types.js';
-import { ICommandMetadata } from '../../../platform/commands/common/commands.js';
+//加回onDidExecuteCommand的依赖
+import { ICommandMetadata, ICommandEvent } from '../../../platform/commands/common/commands.js';
+import { Event, Emitter } from '../../../base/common/event.js';
+
 import * as extHostTypes from './extHostTypes.js';
 import * as extHostTypeConverter from './extHostTypeConverters.js';
 import { cloneAndChange } from '../../../base/common/objects.js';
@@ -47,6 +50,9 @@ export interface ArgumentProcessor {
 export class ExtHostCommands implements ExtHostCommandsShape {
 
 	readonly _serviceBrand: undefined;
+	// 加回onDidExecuteCommand
+	private readonly _onDidExecuteCommand: Emitter<vscode.CommandExecutionEvent>;
+	readonly onDidExecuteCommand: Event<vscode.CommandExecutionEvent>;
 
 	#proxy: MainThreadCommandsShape;
 
@@ -66,6 +72,15 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 		@IExtHostTelemetry extHostTelemetry: IExtHostTelemetry
 	) {
 		this.#proxy = extHostRpc.getProxy(MainContext.MainThreadCommands);
+		// 加回onDidExecuteCommand
+		this._onDidExecuteCommand = new Emitter<vscode.CommandExecutionEvent>({
+			onDidAddFirstListener: () => this.#proxy.$registerCommandListener(),
+			onDidRemoveLastListener: () => this.#proxy.$unregisterCommandListener(),
+		});
+		this.onDidExecuteCommand = Event.filter(
+			this._onDidExecuteCommand.event,
+			e => e.command[0] !== '_'); // filter 'private' commands
+
 		this._logService = logService;
 		this.#extHostTelemetry = extHostTelemetry;
 		this.#telemetry = extHostRpc.getProxy(MainContext.MainThreadTelemetry);
@@ -169,10 +184,20 @@ export class ExtHostCommands implements ExtHostCommandsShape {
 			}
 		});
 	}
+	// 加回onDidExecuteCommand的handler
+	$handleDidExecuteCommand(command: ICommandEvent): void {
+		this._onDidExecuteCommand.fire({
+			command: command.commandId,
+			arguments: command.args.map(arg => this._argumentProcessors.reduce((r, p) => p.processArgument(r, undefined), arg))
+		});
+	}
 
 	executeCommand<T>(id: string, ...args: any[]): Promise<T> {
 		this._logService.trace('ExtHostCommands#executeCommand', id);
-		return this._doExecuteCommand(id, args, true);
+		// 加回onDidExecuteCommand的调用
+		const res = this._doExecuteCommand(id, args, true);
+		this._onDidExecuteCommand.fire({ command: id, arguments: args });
+		return res as Promise<T>;
 	}
 
 	private async _doExecuteCommand<T>(id: string, args: any[], retry: boolean): Promise<T> {
