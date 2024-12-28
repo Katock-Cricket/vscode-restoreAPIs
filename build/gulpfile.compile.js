@@ -16,11 +16,12 @@ const compilation = require('./lib/compilation');
  * @param {boolean} disableMangle
  */
 function makeCompileBuildTask(disableMangle) {
+	disableMangle
 	return task.series(
-		util.rimraf('out-build'),
-		date.writeISODate('out-build'),
+		// util.rimraf('out-build'),
+		// date.writeISODate('out-build'),
 		compilation.compileApiProposalNamesTask,
-		compilation.compileTask('src', 'out-build', true, { disableMangle })
+		// compilation.compileTask('src', 'out-build', true, { disableMangle })
 	);
 }
 
